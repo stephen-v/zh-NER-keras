@@ -1,6 +1,7 @@
 import numpy
 from collections import Counter
 from keras.preprocessing.sequence import pad_sequences
+import pickle
 
 
 def load_data():
@@ -9,8 +10,11 @@ def load_data():
 
     word_counts = Counter(row[0].lower() for sample in train for row in sample)
     vocab = [w for w, f in iter(word_counts.items()) if f >= 2]
-
     chunk_tags = ['O', 'B-PER', 'I-PER', 'B-LOC', 'I-LOC', "B-ORG", "I-ORG"]
+
+    # save initial config data
+    with open('model/config.pkl', 'wb') as outp:
+        pickle.dump((vocab, chunk_tags), outp)
 
     train = _process_data(train, vocab, chunk_tags)
     test = _process_data(test, vocab, chunk_tags)
@@ -47,3 +51,11 @@ def _process_data(data, vocab, chunk_tags, maxlen=None, onehot=False):
         # y_pos = numpy.expand_dims(y_pos, 2)
         y_chunk = numpy.expand_dims(y_chunk, 2)
     return x, y_chunk
+
+
+def process_data(data, vocab, maxlen=100):
+    word2idx = dict((w, i) for i, w in enumerate(vocab))
+    x = [word2idx.get(w[0].lower(), 1) for w in data]
+    length = len(x)
+    x = pad_sequences([x], maxlen)  # left padding
+    return x, length
