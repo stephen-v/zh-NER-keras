@@ -2,6 +2,7 @@ import numpy
 from collections import Counter
 from keras.preprocessing.sequence import pad_sequences
 import pickle
+import platform
 
 
 def load_data():
@@ -22,10 +23,18 @@ def load_data():
 
 
 def _parse_data(fh):
+    #  in windows the new line is '\r\n\r\n' the space is '\r\n' . so if you use windows system,
+    #  you have to use recorsponding instructions
+
+    if platform.system() == 'Windows':
+        split_text = '\r\n'
+    else:
+        split_text = '\n'
+
     string = fh.read().decode('utf-8')
-    data = [[row.split() for row in sample.split('\r\n')] for
+    data = [[row.split() for row in sample.split(split_text)] for
             sample in
-            string.strip().split('\r\n\r\n')]
+            string.strip().split(split_text + split_text)]
     fh.close()
     return data
 
@@ -36,19 +45,15 @@ def _process_data(data, vocab, chunk_tags, maxlen=None, onehot=False):
     word2idx = dict((w, i) for i, w in enumerate(vocab))
     x = [[word2idx.get(w[0].lower(), 1) for w in s] for s in data]  # set to <unk> (index 1) if not in vocab
 
-    # y_pos = [[pos_tags.index(w[1]) for w in s] for s in data]
     y_chunk = [[chunk_tags.index(w[1]) for w in s] for s in data]
 
     x = pad_sequences(x, maxlen)  # left padding
 
-    # y_pos = pad_sequences(y_pos, maxlen, value=-1)  # lef padded with -1. Indeed, any integer works as it will be masked
     y_chunk = pad_sequences(y_chunk, maxlen, value=-1)
 
     if onehot:
-        # y_pos = numpy.eye(len(pos_tags), dtype='float32')[y_pos]
         y_chunk = numpy.eye(len(chunk_tags), dtype='float32')[y_chunk]
     else:
-        # y_pos = numpy.expand_dims(y_pos, 2)
         y_chunk = numpy.expand_dims(y_chunk, 2)
     return x, y_chunk
 
