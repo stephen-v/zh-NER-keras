@@ -30,10 +30,6 @@ output:
 ```
 
 
-## reference
-
-## acknowledgement 
-
 
 
 
